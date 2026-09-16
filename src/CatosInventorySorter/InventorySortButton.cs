@@ -45,7 +45,7 @@ namespace CatosInventorySorter
                 rect.anchorMin = new Vector2(0.5f, 0.5f);
                 rect.anchorMax = new Vector2(0.5f, 0.5f);
                 rect.pivot = new Vector2(0f, 1f);
-                rect.sizeDelta = new Vector2(150f, 34f);
+                rect.sizeDelta = new Vector2(180f, 34f);
                 rect.localScale = Vector3.one;
             }
             _button.transform.SetAsLastSibling();
@@ -72,7 +72,12 @@ namespace CatosInventorySorter
             }
             _label.alignment = TextAlignmentOptions.Center;
             _label.color = Color.white;
-            _label.text = "Sort: " + InventorySorter.GetCriterion();
+            _label.textWrappingMode = TextWrappingModes.NoWrap;
+            _label.overflowMode = TextOverflowModes.Ellipsis;
+            _label.enableAutoSizing = true;
+            _label.fontSizeMin = 11f;
+            _label.fontSizeMax = 18f;
+            _label.text = FormatLabel(InventorySorter.GetCriterion());
             PositionBesideInventory(gui, playerPanel, overlayRoot as RectTransform, rect);
             Plugin.Log?.LogInfo("Inventory sort button attached beside the player inventory grid.");
         }
@@ -117,9 +122,9 @@ namespace CatosInventorySorter
                 SortCriterion criterion = InventorySorter.GetCriterion();
                 bool descending = criterion == SortCriterion.Weight
                     ? ModConfig.WeightDescending.Value
-                    : ModConfig.Descending.Value;
+                    : ModConfig.QuantityDescending.Value;
                 bool changed = InventorySorter.Sort(player.GetInventory(), player, criterion, descending);
-                if (_label) _label.text = "Sort: " + criterion;
+                if (_label) _label.text = FormatLabel(criterion);
                 Plugin.Log?.LogDebug(changed
                     ? $"Sorted player inventory by {criterion} (descending={descending})."
                     : "Player inventory already matches the selected sort order.");
@@ -133,8 +138,13 @@ namespace CatosInventorySorter
         private static void RefreshLabel()
         {
             if (!_label) return;
-            string desired = "Sort: " + InventorySorter.GetCriterion();
+            string desired = FormatLabel(InventorySorter.GetCriterion());
             if (_label.text != desired) _label.text = desired;
+        }
+
+        private static string FormatLabel(SortCriterion criterion)
+        {
+            return "Sort: " + criterion;
         }
 
         private static void PositionBesideInventory(InventoryGui gui, Transform playerPanel,
@@ -151,10 +161,10 @@ namespace CatosInventorySorter
             reference.GetWorldCorners(_corners);
             Vector3 topRight = overlayRoot.InverseTransformPoint(_corners[2]);
             Rect bounds = overlayRoot.rect;
-            float width = buttonRect.rect.width > 0f ? buttonRect.rect.width : 150f;
+            float width = buttonRect.rect.width > 0f ? buttonRect.rect.width : 180f;
             float height = buttonRect.rect.height > 0f ? buttonRect.rect.height : 34f;
-            float x = Mathf.Clamp(topRight.x + 12f, bounds.xMin + 8f, bounds.xMax - width - 8f);
-            float y = Mathf.Clamp(topRight.y, bounds.yMin + height + 8f, bounds.yMax - 8f);
+            float x = Mathf.Clamp(topRight.x + 24f, bounds.xMin + 8f, bounds.xMax - width - 8f);
+            float y = Mathf.Clamp(topRight.y + 24f, bounds.yMin + height + 8f, bounds.yMax - 8f);
             buttonRect.localPosition = new Vector3(x, y, 0f);
         }
     }

@@ -1,0 +1,9 @@
+{
+  "name": "CatosInventorySorter",
+  "version_number": "0.1.0",
+  "website_url": "https://github.com/ucwxcato/catosinventorysorter-valheim",
+  "description": "Sort your player inventory by weight or quantity, with heaviest and largest stacks first.",
+  "dependencies": [
+    "denikson-BepInExPack_Valheim-5.4.2350"
+  ]
+}

@@ -2,7 +2,7 @@
 
 > **Status:** New client-side project scaffold and first sort implementation are in source; the local Release build succeeds. Runtime and gameplay behavior still need verification.
 >
-> **Purpose:** Let a player reorder their own inventory with an in-game button, sorting by type, name, stack weight, or quantity.
+> **Purpose:** Let a player reorder their own inventory with an in-game button, sorting by total stack weight or quantity.
 
 ## Locked scope
 
@@ -12,7 +12,7 @@
 - Notifies the native inventory through `Inventory.Changed(true, false)` so its normal change listeners run.
 - Has no custom network messages and no item transfer operations.
 - Adds a button to the native player inventory panel and F6 shortcut while the inventory is visible.
-- Sorting choices: Type, Name, Weight (shared unit weight times stack size), and Quantity. Weight defaults to heaviest first; other modes use the configurable `Descending` option.
+- Sorting choices: Weight (shared unit weight times stack size) and Quantity. Both default to descending order: heaviest or largest stack first.
 - Config changes made by an external editor are polled and reloaded on the main thread after the file write settles.
 
 ## Native API evidence
@@ -39,7 +39,7 @@ Use the existing `C:\Users\magni\Downloads\Dedicated` world through `C:\Users\ma
 - [ ] External config edits reload while in-game and update the sort button label.
 - [ ] Sort button is visible beside the upper-right edge of the player inventory grid.
 - [ ] Button appears in a clean client and invokes the configured sort.
-- [ ] Each sort mode produces the expected stable order, including ties.
+- [ ] Weight and quantity modes produce the expected descending order, including stable ties.
 - [ ] Hotbar, equipped items, and bound items remain in their original positions.
 - [ ] Repeated sort is idempotent; empty and one-item inventories are safe.
 - [ ] Sorting while connected to the dedicated test endpoint persists after reconnect/reload.

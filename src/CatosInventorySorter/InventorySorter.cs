@@ -5,7 +5,7 @@ using HarmonyLib;
 
 namespace CatosInventorySorter
 {
-    internal enum SortCriterion { Type, Name, Weight, Quantity }
+    internal enum SortCriterion { Weight, Quantity }
 
     internal static class InventorySorter
     {
@@ -96,28 +96,15 @@ namespace CatosInventorySorter
             int result;
             switch (criterion)
             {
-                case SortCriterion.Type:
-                    result = left.m_shared.m_itemType.CompareTo(right.m_shared.m_itemType);
-                    break;
                 case SortCriterion.Weight:
                     result = TotalWeight(left).CompareTo(TotalWeight(right));
                     break;
-                case SortCriterion.Quantity:
-                    result = left.m_stack.CompareTo(right.m_stack);
-                    break;
                 default:
-                    result = StringComparer.CurrentCultureIgnoreCase.Compare(
-                        left.m_shared.m_name ?? string.Empty, right.m_shared.m_name ?? string.Empty);
+                    result = left.m_stack.CompareTo(right.m_stack);
                     break;
             }
 
             if (descending) result = -result;
-            if (result != 0) return result;
-            result = StringComparer.Ordinal.Compare(left.m_shared.m_name, right.m_shared.m_name);
-            if (result != 0) return result;
-            result = right.m_shared.m_itemType.CompareTo(left.m_shared.m_itemType);
-            if (result != 0) return result;
-            result = right.m_stack.CompareTo(left.m_stack);
             if (result != 0) return result;
             return left.m_gridPos.y != right.m_gridPos.y
                 ? left.m_gridPos.y.CompareTo(right.m_gridPos.y)
@@ -131,7 +118,7 @@ namespace CatosInventorySorter
         {
             return Enum.TryParse(ModConfig.SortMode.Value, true, out SortCriterion criterion)
                 ? criterion
-                : SortCriterion.Type;
+                : SortCriterion.Weight;
         }
     }
 }
