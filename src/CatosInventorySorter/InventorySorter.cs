@@ -6,6 +6,8 @@ using HarmonyLib;
 namespace CatosInventorySorter
 {
     internal enum SortCriterion { Weight, Quantity }
+    internal enum SpecialItemsMode { Ignore, SortFirst }
+    internal enum SpecialItemCategory { Other, Armor, Food, Arrows }
 
     internal static class InventorySorter
     {
@@ -37,6 +39,7 @@ namespace CatosInventorySorter
             var movable = new List<ItemDrop.ItemData>();
             var reservedPositions = new HashSet<long>();
             var occupied = new HashSet<long>();
+            SpecialItemsMode specialItemsMode = GetSpecialItemsMode();
             foreach (ItemDrop.ItemData item in items)
             {
                 if (item == null || item.m_shared == null) return false;
@@ -47,13 +50,16 @@ namespace CatosInventorySorter
                 if (!occupied.Add(key)) return false;
 
                 // Keep the hotbar row, equipped items, and game-bound items fixed.
-                if (y == 0 || locked.Contains(item) || player.IsItemEquiped(item))
+                // Special items are either fixed or included in the sort according
+                // to the user's config.
+                if (y == 0 || locked.Contains(item) || player.IsItemEquiped(item) ||
+                    (specialItemsMode == SpecialItemsMode.Ignore && IsSpecialItem(item)))
                     reservedPositions.Add(key);
                 else
                     movable.Add(item);
             }
 
-            movable.Sort((a, b) => Compare(a, b, criterion, descending));
+            movable.Sort((a, b) => Compare(a, b, criterion, descending, specialItemsMode));
             var destinations = new List<Slot>();
             for (int y = 1; y < height; y++)
                 for (int x = 0; x < width; x++)
@@ -91,8 +97,14 @@ namespace CatosInventorySorter
         }
 
         private static int Compare(ItemDrop.ItemData left, ItemDrop.ItemData right,
-            SortCriterion criterion, bool descending)
+            SortCriterion criterion, bool descending, SpecialItemsMode specialItemsMode)
         {
+            if (specialItemsMode == SpecialItemsMode.SortFirst)
+            {
+                int categoryResult = GetSpecialItemRank(left).CompareTo(GetSpecialItemRank(right));
+                if (categoryResult != 0) return categoryResult;
+            }
+
             int result;
             switch (criterion)
             {
@@ -113,6 +125,66 @@ namespace CatosInventorySorter
 
         private static float TotalWeight(ItemDrop.ItemData item) => item.m_shared.m_weight * item.m_stack;
         private static long PositionKey(int x, int y) => ((long)y << 32) | (uint)x;
+
+        private static bool IsSpecialItem(ItemDrop.ItemData item)
+        {
+            return GetSpecialItemCategory(item) != SpecialItemCategory.Other;
+        }
+
+        private static SpecialItemCategory GetSpecialItemCategory(ItemDrop.ItemData item)
+        {
+            if (item == null || item.m_shared == null) return SpecialItemCategory.Other;
+
+            switch (item.m_shared.m_itemType)
+            {
+                case ItemDrop.ItemData.ItemType.Ammo:
+                    return SpecialItemCategory.Arrows;
+                case ItemDrop.ItemData.ItemType.Helmet:
+                case ItemDrop.ItemData.ItemType.Chest:
+                case ItemDrop.ItemData.ItemType.Legs:
+                case ItemDrop.ItemData.ItemType.Hands:
+                case ItemDrop.ItemData.ItemType.Shoulder:
+                    return SpecialItemCategory.Armor;
+                default:
+                    // Food is identified by its food value rather than the broad
+                    // Consumable category, which also contains non-food items.
+                    return item.m_shared.m_food > 0f
+                        ? SpecialItemCategory.Food
+                        : SpecialItemCategory.Other;
+            }
+        }
+
+        private static int GetSpecialItemRank(ItemDrop.ItemData item)
+        {
+            SpecialItemCategory category = GetSpecialItemCategory(item);
+            string configuredOrder = ModConfig.SpecialItemsOrder != null
+                ? ModConfig.SpecialItemsOrder.Value
+                : "Armor,Food,Arrows";
+            string[] order = configuredOrder.Split(',');
+            int rank = 0;
+            foreach (string entry in order)
+            {
+                SpecialItemCategory configuredCategory;
+                if (!Enum.TryParse(entry.Trim(), true, out configuredCategory) ||
+                    configuredCategory == SpecialItemCategory.Other)
+                    continue;
+                if (configuredCategory == category) return rank;
+                rank++;
+            }
+
+            // Invalid or omitted categories sort after explicitly ordered special
+            // categories, while ordinary items always remain last.
+            return category == SpecialItemCategory.Other ? int.MaxValue : rank;
+        }
+
+        private static SpecialItemsMode GetSpecialItemsMode()
+        {
+            SpecialItemsMode mode;
+            return ModConfig.SpecialItemsMode != null &&
+                Enum.TryParse(ModConfig.SpecialItemsMode.Value, true, out mode)
+                ? mode
+                : SpecialItemsMode.Ignore;
+        }
 
         internal static SortCriterion GetCriterion()
         {
